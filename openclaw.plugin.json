@@ -18,7 +18,8 @@
 			"walrusPublisherUrl": { "format": "uri", "type": "string" },
 			"walrusAggregatorUrl": { "format": "uri", "type": "string" },
 			"stateDir": { "type": "string" },
-			"encryptImages": { "type": "boolean" }
+			"encryptImages": { "type": "boolean" },
+			"walrusEpochs": { "minimum": 1, "type": "integer" }
 		}
 	},
 	"uiHints": {
