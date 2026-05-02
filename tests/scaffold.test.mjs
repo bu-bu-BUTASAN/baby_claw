@@ -6,6 +6,9 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
+const suiPrivateKeyRef = "$" + "{SUI_PRIVATE_KEY}";
+const walrusPublisherUrlRef = "$" + "{WALRUS_PUBLISHER_URL}";
+const walrusAggregatorUrlRef = "$" + "{WALRUS_AGGREGATOR_URL}";
 
 async function readJson(relativePath) {
 	const file = resolve(root, relativePath);
@@ -124,6 +127,53 @@ test("compiled plugin entry registers the Step 9 tools", async () => {
 	});
 });
 
+test("compiled plugin entry tolerates unresolved environment references", async () => {
+	const { default: entry } = await distImport("dist/index.js");
+	const previousEnv = {
+		SUI_PRIVATE_KEY: process.env.SUI_PRIVATE_KEY,
+		WALRUS_PUBLISHER_URL: process.env.WALRUS_PUBLISHER_URL,
+		WALRUS_AGGREGATOR_URL: process.env.WALRUS_AGGREGATOR_URL,
+	};
+	try {
+		delete process.env.SUI_PRIVATE_KEY;
+		delete process.env.WALRUS_PUBLISHER_URL;
+		delete process.env.WALRUS_AGGREGATOR_URL;
+
+		const registeredTools = [];
+		entry.register({
+			pluginConfig: {
+				suiPrivateKey: suiPrivateKeyRef,
+				walrusPublisherUrl: walrusPublisherUrlRef,
+				walrusAggregatorUrl: walrusAggregatorUrlRef,
+			},
+			registerTool(tool, options) {
+				registeredTools.push({ tool, options });
+			},
+		});
+
+		const statusTool = registeredTools.find(
+			({ tool }) => tool.name === "baby_claw_status",
+		).tool;
+		const status = JSON.parse(
+			(await statusTool.execute("test-call", {})).content[0].text,
+		);
+
+		assert.equal(registeredTools.length, 9);
+		assert.equal(status.config.readyForInit, false);
+		assert.equal(status.config.hasSuiPrivateKey, false);
+		assert.equal(status.config.hasWalrusPublisherUrl, false);
+		assert.equal(status.config.hasWalrusAggregatorUrl, false);
+	} finally {
+		for (const [key, value] of Object.entries(previousEnv)) {
+			if (value === undefined) {
+				delete process.env[key];
+			} else {
+				process.env[key] = value;
+			}
+		}
+	}
+});
+
 test("config schema normalizes defaults and rejects unsafe config shapes", async () => {
 	const { normalizeBabyClawConfig, configSchema } =
 		await distImport("dist/config.js");
@@ -143,9 +193,9 @@ test("config schema normalizes defaults and rejects unsafe config shapes", async
 	assert.equal(configSchema.validate({ unknownKey: true }).ok, false);
 	assert.equal(
 		configSchema.validate({
-			suiPrivateKey: "${SUI_PRIVATE_KEY}",
-			walrusPublisherUrl: "${WALRUS_PUBLISHER_URL}",
-			walrusAggregatorUrl: "${WALRUS_AGGREGATOR_URL}",
+			suiPrivateKey: suiPrivateKeyRef,
+			walrusPublisherUrl: walrusPublisherUrlRef,
+			walrusAggregatorUrl: walrusAggregatorUrlRef,
 		}).ok,
 		true,
 	);
@@ -181,9 +231,9 @@ test("config schema normalizes defaults and rejects unsafe config shapes", async
 		process.env.WALRUS_AGGREGATOR_URL = "https://aggregator.env.example.com";
 		assert.deepEqual(
 			normalizeBabyClawConfig({
-				suiPrivateKey: "${SUI_PRIVATE_KEY}",
-				walrusPublisherUrl: "${WALRUS_PUBLISHER_URL}",
-				walrusAggregatorUrl: "${WALRUS_AGGREGATOR_URL}",
+				suiPrivateKey: suiPrivateKeyRef,
+				walrusPublisherUrl: walrusPublisherUrlRef,
+				walrusAggregatorUrl: walrusAggregatorUrlRef,
 			}),
 			{
 				suiNetwork: "testnet",
@@ -197,12 +247,17 @@ test("config schema normalizes defaults and rejects unsafe config shapes", async
 		);
 
 		delete process.env.SUI_PRIVATE_KEY;
-		assert.throws(
-			() =>
-				normalizeBabyClawConfig({
-					suiPrivateKey: "${SUI_PRIVATE_KEY}",
-				}),
-			/SUI_PRIVATE_KEY is required/,
+		assert.deepEqual(
+			normalizeBabyClawConfig({
+				suiPrivateKey: suiPrivateKeyRef,
+			}),
+			{
+				suiNetwork: "testnet",
+				stateDir: "~/.openclaw/baby_claw",
+				encryptImages: true,
+				walrusEpochs: 1,
+				suiPrivateKey: undefined,
+			},
 		);
 	} finally {
 		for (const [key, value] of Object.entries(previousEnv)) {
