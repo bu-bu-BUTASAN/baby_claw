@@ -1,1 +1,5 @@
 docs_implement/
+node_modules/
+dist/
+coverage/
+*.log
