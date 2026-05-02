@@ -1,0 +1,19 @@
+{
+  "id": "baby_claw",
+  "name": "Baby Claw",
+  "description": "Privacy-preserving baby care record tools for OpenClaw.",
+  "version": "0.1.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  },
+  "skills": [
+    "skills/baby_claw"
+  ],
+  "contracts": {
+    "tools": [
+      "baby_claw_healthcheck"
+    ]
+  }
+}
