@@ -141,6 +141,14 @@ test("config schema normalizes defaults and rejects unsafe config shapes", async
 	assert.equal(configSchema.validate({ walrusEpochs: 0 }).ok, false);
 	assert.equal(configSchema.validate({ walrusEpochs: 1.5 }).ok, false);
 	assert.equal(configSchema.validate({ unknownKey: true }).ok, false);
+	assert.equal(
+		configSchema.validate({
+			suiPrivateKey: "${SUI_PRIVATE_KEY}",
+			walrusPublisherUrl: "${WALRUS_PUBLISHER_URL}",
+			walrusAggregatorUrl: "${WALRUS_AGGREGATOR_URL}",
+		}).ok,
+		true,
+	);
 	assert.deepEqual(
 		normalizeBabyClawConfig({
 			suiNetwork: "devnet",
@@ -161,6 +169,50 @@ test("config schema normalizes defaults and rejects unsafe config shapes", async
 			walrusAggregatorUrl: "https://aggregator.example.com",
 		},
 	);
+
+	const previousEnv = {
+		SUI_PRIVATE_KEY: process.env.SUI_PRIVATE_KEY,
+		WALRUS_PUBLISHER_URL: process.env.WALRUS_PUBLISHER_URL,
+		WALRUS_AGGREGATOR_URL: process.env.WALRUS_AGGREGATOR_URL,
+	};
+	try {
+		process.env.SUI_PRIVATE_KEY = "suiprivkey-env-value";
+		process.env.WALRUS_PUBLISHER_URL = "https://publisher.env.example.com";
+		process.env.WALRUS_AGGREGATOR_URL = "https://aggregator.env.example.com";
+		assert.deepEqual(
+			normalizeBabyClawConfig({
+				suiPrivateKey: "${SUI_PRIVATE_KEY}",
+				walrusPublisherUrl: "${WALRUS_PUBLISHER_URL}",
+				walrusAggregatorUrl: "${WALRUS_AGGREGATOR_URL}",
+			}),
+			{
+				suiNetwork: "testnet",
+				stateDir: "~/.openclaw/baby_claw",
+				encryptImages: true,
+				walrusEpochs: 1,
+				suiPrivateKey: "suiprivkey-env-value",
+				walrusPublisherUrl: "https://publisher.env.example.com",
+				walrusAggregatorUrl: "https://aggregator.env.example.com",
+			},
+		);
+
+		delete process.env.SUI_PRIVATE_KEY;
+		assert.throws(
+			() =>
+				normalizeBabyClawConfig({
+					suiPrivateKey: "${SUI_PRIVATE_KEY}",
+				}),
+			/SUI_PRIVATE_KEY is required/,
+		);
+	} finally {
+		for (const [key, value] of Object.entries(previousEnv)) {
+			if (value === undefined) {
+				delete process.env[key];
+			} else {
+				process.env[key] = value;
+			}
+		}
+	}
 });
 
 test("state helpers return null for missing state and roundtrip valid state", async () => {
