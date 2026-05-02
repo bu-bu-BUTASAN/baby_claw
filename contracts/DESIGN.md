@@ -117,7 +117,7 @@ public struct Record has store {
     payload_blob_id: vector<u8>,
     payload_hash: vector<u8>,
     record_commitment: vector<u8>,
-    created_at_bucket: u64,
+    created_at_ms: u64,
     schema_version: u16,
 }
 ```
@@ -176,7 +176,7 @@ profile に暗号化済み payload 参照を 1 件 append します。
 
 Inputs: `profile: &mut Profile`, `payload_blob_id: vector<u8>`,
 `payload_hash: vector<u8>`, `record_commitment: vector<u8>`,
-`created_at_bucket: u64`, `schema_version: u16`, `ctx: &mut TxContext`。
+`created_at_ms: u64`, `schema_version: u16`, `ctx: &mut TxContext`。
 
 Behavior:
 - caller が `Profile.owner` であることを要求します。
@@ -260,6 +260,5 @@ migration helper、wallet ごとの複数 profile、local state 復旧 flow が�
 未決事項:
 - `payload_hash` の hash algorithm と canonical byte format。
 - `record_commitment` の commitment scheme。
-- `created_at_bucket` の bucket size。
 - local key storage と recovery strategy。
 - package upgrade を MVP で扱うかどうか。
