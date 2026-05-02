@@ -32,6 +32,7 @@ test("openclaw manifest declares baby_claw with the strict config schema", async
 		"suiNetwork",
 		"suiPrivateKey",
 		"walrusAggregatorUrl",
+		"walrusEpochs",
 		"walrusPublisherUrl",
 	]);
 	assert.equal(manifest.configSchema.properties.packageId, undefined);
@@ -114,17 +115,21 @@ test("config schema normalizes defaults and rejects unsafe config shapes", async
 		suiNetwork: "testnet",
 		stateDir: "~/.openclaw/baby_claw",
 		encryptImages: true,
+		walrusEpochs: 1,
 	});
 
 	assert.equal(configSchema.validate({ packageId: "0x123" }).ok, false);
 	assert.equal(configSchema.validate({ suiNetwork: "mainnet" }).ok, false);
 	assert.equal(configSchema.validate({ walrusPublisherUrl: 123 }).ok, false);
+	assert.equal(configSchema.validate({ walrusEpochs: 0 }).ok, false);
+	assert.equal(configSchema.validate({ walrusEpochs: 1.5 }).ok, false);
 	assert.equal(configSchema.validate({ unknownKey: true }).ok, false);
 	assert.deepEqual(
 		normalizeBabyClawConfig({
 			suiNetwork: "devnet",
 			stateDir: "/tmp/baby-claw",
 			encryptImages: false,
+			walrusEpochs: 3,
 			suiPrivateKey: "suiprivkey",
 			walrusPublisherUrl: "https://publisher.example.com",
 			walrusAggregatorUrl: "https://aggregator.example.com",
@@ -133,6 +138,7 @@ test("config schema normalizes defaults and rejects unsafe config shapes", async
 			suiNetwork: "devnet",
 			stateDir: "/tmp/baby-claw",
 			encryptImages: false,
+			walrusEpochs: 3,
 			suiPrivateKey: "suiprivkey",
 			walrusPublisherUrl: "https://publisher.example.com",
 			walrusAggregatorUrl: "https://aggregator.example.com",
