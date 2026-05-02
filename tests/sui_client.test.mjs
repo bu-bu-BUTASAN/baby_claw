@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const encoder = new TextEncoder();
+const PROFILE_ID = `0x${"1".padStart(64, "0")}`;
+const OWNER_ID = `0x${"2".padStart(64, "0")}`;
 
 function distImport(relativePath) {
 	return import(`${resolve(root, relativePath)}?t=${Date.now()}`);
@@ -69,7 +71,7 @@ function createRuntime(overrides = {}) {
 	const transactions = [];
 	const executeResults = [...(overrides.executeResults ?? [])];
 	const core = {
-		signAndExecuteTransaction: async (input) => {
+		signAndExecuteTransaction: async (_input) => {
 			return (
 				executeResults.shift() ?? {
 					Transaction: {
@@ -196,12 +198,23 @@ test("addRecord builds the add_record Move call with current contract arguments"
 	});
 
 	assert.deepEqual(result, { digest: "tx-digest" });
-	assert.equal(transactions[0].commands[0].target, "0xpackage::ledger::add_record");
+	assert.equal(
+		transactions[0].commands[0].target,
+		"0xpackage::ledger::add_record",
+	);
 	assert.deepEqual(transactions[0].commands[0].arguments, [
 		{ $kind: "Object", objectId: "0xprofile" },
-		{ $kind: "Pure", type: "vector<u8>", value: [...encoder.encode("walrus-blob")] },
+		{
+			$kind: "Pure",
+			type: "vector<u8>",
+			value: [...encoder.encode("walrus-blob")],
+		},
 		{ $kind: "Pure", type: "vector<u8>", value: [1, 2, 3] },
-		{ $kind: "Pure", type: "vector<u8>", value: [...encoder.encode("commitment")] },
+		{
+			$kind: "Pure",
+			type: "vector<u8>",
+			value: [...encoder.encode("commitment")],
+		},
 		{ $kind: "Pure", type: "u64", value: 1_777_777_777_000 },
 	]);
 });
@@ -217,8 +230,8 @@ test("profile and record BCS codecs decode Move object content", async () => {
 	} = await distImport("dist/clients/sui.js");
 
 	const profileBytes = ProfileBcs.serialize({
-		id: { id: "0xprofile" },
-		owner: "0xowner",
+		id: { id: PROFILE_ID },
+		owner: OWNER_ID,
 		next_seq: 3n,
 		schema_version: 1,
 		created_at_ms: 1_777_700_000_000n,
@@ -234,8 +247,8 @@ test("profile and record BCS codecs decode Move object content", async () => {
 	const keyBytes = RecordKeyBcs.serialize({ seq: 2n }).toBytes();
 
 	assert.deepEqual(parseProfile(profileBytes), {
-		id: "0xprofile",
-		owner: "0xowner",
+		id: PROFILE_ID,
+		owner: OWNER_ID,
 		nextSeq: 3n,
 		schemaVersion: 1,
 		createdAtMs: 1_777_700_000_000n,
@@ -262,8 +275,8 @@ test("listRecords, getTodayRecords, and getLastRecord decode dynamic fields", as
 	} = await distImport("dist/clients/sui.js");
 	const dayStart = Date.UTC(2026, 4, 2);
 	const profileContent = ProfileBcs.serialize({
-		id: { id: "0xprofile" },
-		owner: "0xowner",
+		id: { id: PROFILE_ID },
+		owner: OWNER_ID,
 		next_seq: 3n,
 		schema_version: 1,
 		created_at_ms: BigInt(dayStart),
@@ -305,7 +318,11 @@ test("listRecords, getTodayRecords, and getLastRecord decode dynamic fields", as
 				const seq = RecordKeyBcs.parse(name.bcs).seq.toString();
 				const value = records.get(seq);
 				return value
-					? { dynamicField: { value: { type: "0xpackage::ledger::Record", bcs: value } } }
+					? {
+							dynamicField: {
+								value: { type: "0xpackage::ledger::Record", bcs: value },
+							},
+						}
 					: { dynamicField: null };
 			},
 		},
@@ -318,9 +335,9 @@ test("listRecords, getTodayRecords, and getLastRecord decode dynamic fields", as
 		[0n, 1n, 2n],
 	);
 	assert.deepEqual(
-		(await getTodayRecords({ ...input, now: new Date(dayStart + 3_600_000) })).map(
-			(record) => record.payloadBlobId,
-		),
+		(
+			await getTodayRecords({ ...input, now: new Date(dayStart + 3_600_000) })
+		).map((record) => record.payloadBlobId),
 		["one", "two"],
 	);
 	assert.equal((await getLastRecord(input))?.payloadBlobId, "two");
@@ -362,7 +379,16 @@ test("Sui client surfaces explicit errors without leaking private keys", async (
 		],
 	});
 	await assert.rejects(
-		() => addRecord({ ...failed.runtime, packageId: "0xpackage", profileId: "0xprofile", payloadBlobId: "blob", payloadHash: "hash", recordCommitment: "commit", createdAtMs: 1 }),
+		() =>
+			addRecord({
+				...failed.runtime,
+				packageId: "0xpackage",
+				profileId: "0xprofile",
+				payloadBlobId: "blob",
+				payloadHash: "hash",
+				recordCommitment: "commit",
+				createdAtMs: 1,
+			}),
 		/Move abort/,
 	);
 
@@ -393,9 +419,11 @@ test("Sui client surfaces explicit errors without leaking private keys", async (
 			getObject: async () => ({
 				object: {
 					objectId: "0xprofile",
-					content: (await distImport("dist/clients/sui.js")).ProfileBcs.serialize({
-						id: { id: "0xprofile" },
-						owner: "0xowner",
+					content: (
+						await distImport("dist/clients/sui.js")
+					).ProfileBcs.serialize({
+						id: { id: PROFILE_ID },
+						owner: OWNER_ID,
 						next_seq: 0n,
 						schema_version: 1,
 						created_at_ms: 1n,
