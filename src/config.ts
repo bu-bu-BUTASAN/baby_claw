@@ -6,6 +6,7 @@ const defaultStateDir = "~/.openclaw/baby_claw";
 const defaultEncryptImages = true;
 const defaultWalrusEpochs = 1;
 const allowedSuiNetworks = new Set(["testnet", "devnet", "localnet"]);
+const envReferencePattern = /^\$\{([A-Z_][A-Z0-9_]*)\}$/;
 
 export type BabyClawConfig = {
 	suiNetwork: "testnet" | "devnet" | "localnet";
@@ -27,8 +28,18 @@ export const configJsonSchema = Type.Object(
 			]),
 		),
 		suiPrivateKey: Type.Optional(Type.String()),
-		walrusPublisherUrl: Type.Optional(Type.String({ format: "uri" })),
-		walrusAggregatorUrl: Type.Optional(Type.String({ format: "uri" })),
+		walrusPublisherUrl: Type.Optional(
+			Type.Union([
+				Type.String({ format: "uri" }),
+				Type.String({ pattern: "^\\$\\{[A-Z_][A-Z0-9_]*\\}$" }),
+			]),
+		),
+		walrusAggregatorUrl: Type.Optional(
+			Type.Union([
+				Type.String({ format: "uri" }),
+				Type.String({ pattern: "^\\$\\{[A-Z_][A-Z0-9_]*\\}$" }),
+			]),
+		),
 		stateDir: Type.Optional(Type.String()),
 		encryptImages: Type.Optional(Type.Boolean()),
 		walrusEpochs: Type.Optional(Type.Integer({ minimum: 1 })),
@@ -66,7 +77,42 @@ function isValidUrl(value: string): boolean {
 	}
 }
 
-export function validateBabyClawConfig(value: unknown): ValidationResult {
+function isEnvReference(value: string): boolean {
+	return envReferencePattern.test(value);
+}
+
+function resolveEnvReference(value: string, key: string): string {
+	const match = envReferencePattern.exec(value);
+	if (!match) {
+		return value;
+	}
+
+	const envName = match[1];
+	const resolved = process.env[envName];
+	if (!resolved) {
+		throw new Error(`${envName} is required for Baby Claw ${key}`);
+	}
+	return resolved;
+}
+
+function resolveOptionalEnvReference(
+	value: unknown,
+	key: keyof BabyClawConfig,
+): string | undefined {
+	if (value === undefined) {
+		return undefined;
+	}
+	return resolveEnvReference(value as string, key);
+}
+
+type ValidateOptions = {
+	resolveEnv?: boolean;
+};
+
+export function validateBabyClawConfig(
+	value: unknown,
+	options: ValidateOptions = {},
+): ValidationResult {
 	const errors: string[] = [];
 
 	if (!isRecord(value)) {
@@ -123,8 +169,8 @@ export function validateBabyClawConfig(value: unknown): ValidationResult {
 		if (url !== undefined) {
 			if (typeof url !== "string") {
 				errors.push(`${key} must be a string URL`);
-			} else if (!isValidUrl(url)) {
-				errors.push(`${key} must be a valid URL`);
+			} else if (!isEnvReference(url) && !isValidUrl(url)) {
+				errors.push(`${key} must be a valid URL or ${"${ENV_NAME}"} reference`);
 			}
 		}
 	}
@@ -142,20 +188,41 @@ export function validateBabyClawConfig(value: unknown): ValidationResult {
 			encryptImages: (value.encryptImages ?? defaultEncryptImages) as boolean,
 			walrusEpochs: (value.walrusEpochs ?? defaultWalrusEpochs) as number,
 			...(value.suiPrivateKey !== undefined
-				? { suiPrivateKey: value.suiPrivateKey as string }
+				? {
+						suiPrivateKey: options.resolveEnv
+							? resolveOptionalEnvReference(
+									value.suiPrivateKey,
+									"suiPrivateKey",
+								)
+							: (value.suiPrivateKey as string),
+					}
 				: {}),
 			...(value.walrusPublisherUrl !== undefined
-				? { walrusPublisherUrl: value.walrusPublisherUrl as string }
+				? {
+						walrusPublisherUrl: options.resolveEnv
+							? resolveOptionalEnvReference(
+									value.walrusPublisherUrl,
+									"walrusPublisherUrl",
+								)
+							: (value.walrusPublisherUrl as string),
+					}
 				: {}),
 			...(value.walrusAggregatorUrl !== undefined
-				? { walrusAggregatorUrl: value.walrusAggregatorUrl as string }
+				? {
+						walrusAggregatorUrl: options.resolveEnv
+							? resolveOptionalEnvReference(
+									value.walrusAggregatorUrl,
+									"walrusAggregatorUrl",
+								)
+							: (value.walrusAggregatorUrl as string),
+					}
 				: {}),
 		},
 	};
 }
 
 export function normalizeBabyClawConfig(value: unknown): BabyClawConfig {
-	const result = validateBabyClawConfig(value);
+	const result = validateBabyClawConfig(value, { resolveEnv: true });
 
 	if (!result.ok) {
 		throw new Error(`Invalid Baby Claw config: ${result.errors.join("; ")}`);
@@ -181,7 +248,7 @@ export const configSchema: OpenClawPluginConfigSchema = {
 		return normalizeBabyClawConfig(value);
 	},
 	safeParse(value) {
-		const result = validateBabyClawConfig(value);
+		const result = validateBabyClawConfig(value, { resolveEnv: true });
 		if (result.ok) {
 			return {
 				success: true,

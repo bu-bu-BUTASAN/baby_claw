@@ -104,15 +104,15 @@ sequenceDiagram
 
 | 領域 | 状態 | 内容 |
 | --- | --- | --- |
-| OpenClaw Plugin | 実装済み | `baby_claw_healthcheck`、`baby_claw_status` |
+| OpenClaw Plugin | 実装済み | `baby_claw_healthcheck`、`baby_claw_status`、記録・取得系 tools |
 | Config / Local State | 実装済み | private key を返さず、`packageId` / `profileId` を state 管理 |
 | Sui Move Contract | 実装済み | `ledger::Profile`、`Record`、Dynamic Field records |
 | Move Tests | 実装済み | mint、record追加、owner制御、空 payload 拒否など |
 | Runtime Artifact | 実装済み | Plugin から publish するための package artifact |
 | Sui Client | 実装済み | publish、mint、add/list/get record の client layer |
 | Walrus / Crypto Client | 実装済み | 暗号化 JSON / 画像 blob の保存・復号・tamper拒否 |
-| Natural Language Tools | Next | `record_milk`、`sleep_start/end`、`record_poop`、`get_today` |
-| Telegram Demo | Next | OpenClaw skill と実ツールをつないだ end-to-end demo |
+| Natural Language Tools | 実装済み | `record_milk`、`sleep_start/end`、`record_poop`、`get_today`、`get_last` |
+| Telegram Demo | 要環境設定 | Sui private key と Walrus endpoint を gateway 環境変数に設定後に確認 |
 
 ## なぜ「利用者ごとに publish」するのか
 
@@ -200,16 +200,58 @@ cd contracts && sui move test
 ```jsonc
 {
   "plugins": {
-    "baby_claw": {
+    "entries": {
+      "baby_claw": {
+        "enabled": true,
+        "config": {
+          "suiNetwork": "testnet",
+          "suiPrivateKey": "${SUI_PRIVATE_KEY}",
+          "walrusPublisherUrl": "${WALRUS_PUBLISHER_URL}",
+          "walrusAggregatorUrl": "${WALRUS_AGGREGATOR_URL}",
+          "stateDir": "~/.openclaw/baby_claw",
+          "encryptImages": true,
+          "walrusEpochs": 1
+        }
+      }
+    }
+  }
+}
+```
+
+`suiPrivateKey`、`walrusPublisherUrl`、`walrusAggregatorUrl` は `${ENV_NAME}` 形式で環境変数参照にできます。OpenClaw gateway を systemd で動かす場合は、gateway service に以下の環境変数を渡してください。
+
+```text
+SUI_PRIVATE_KEY=suiprivkey...
+WALRUS_PUBLISHER_URL=https://...
+WALRUS_AGGREGATOR_URL=https://...
+```
+
+このPCでのローカル path install 例:
+
+```bash
+openclaw plugins install -l .
+openclaw plugins enable baby_claw
+openclaw config set plugins.entries.baby_claw.config.suiNetwork '"testnet"' --strict-json
+openclaw config set plugins.entries.baby_claw.config.suiPrivateKey '"${SUI_PRIVATE_KEY}"' --strict-json
+openclaw config set plugins.entries.baby_claw.config.walrusPublisherUrl '"${WALRUS_PUBLISHER_URL}"' --strict-json
+openclaw config set plugins.entries.baby_claw.config.walrusAggregatorUrl '"${WALRUS_AGGREGATOR_URL}"' --strict-json
+openclaw config set plugins.entries.baby_claw.config.stateDir '"~/.openclaw/baby_claw"' --strict-json
+openclaw config set plugins.entries.baby_claw.config.encryptImages true --strict-json
+openclaw config set plugins.entries.baby_claw.config.walrusEpochs 1 --strict-json
+systemctl --user restart openclaw-gateway.service
+```
+
+OpenClawが plugin config だけを受け取る環境では、次の形でも同じ値を渡せます。
+
+```jsonc
+{
       "suiNetwork": "testnet",
       "suiPrivateKey": "${SUI_PRIVATE_KEY}",
-      "walrusPublisherUrl": "https://publisher.example.com",
-      "walrusAggregatorUrl": "https://aggregator.example.com",
+      "walrusPublisherUrl": "${WALRUS_PUBLISHER_URL}",
+      "walrusAggregatorUrl": "${WALRUS_AGGREGATOR_URL}",
       "stateDir": "~/.openclaw/baby_claw",
       "encryptImages": true,
       "walrusEpochs": 1
-    }
-  }
 }
 ```
 
@@ -223,7 +265,14 @@ Current registered tools:
 
 ```text
 baby_claw_healthcheck
+baby_claw_init
 baby_claw_status
+baby_claw_record_milk
+baby_claw_sleep_start
+baby_claw_sleep_end
+baby_claw_record_poop
+baby_claw_get_today
+baby_claw_get_last
 ```
 
 ## Repository map
