@@ -4,8 +4,8 @@ import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { basename, extname, resolve } from "node:path";
-import { promisify } from "node:util";
 import { test } from "node:test";
+import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const root = resolve(import.meta.dirname, "..");
@@ -38,7 +38,10 @@ async function collectFiles(dir, extension) {
 }
 
 async function computeContractSourceHash() {
-	const sourceFiles = await collectFiles(resolve(root, "contracts/sources"), ".move");
+	const sourceFiles = await collectFiles(
+		resolve(root, "contracts/sources"),
+		".move",
+	);
 	const files = [
 		resolve(root, "contracts/Move.toml"),
 		resolve(root, "contracts/Move.lock"),
