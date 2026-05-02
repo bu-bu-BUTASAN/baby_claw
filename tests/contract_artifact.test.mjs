@@ -5,8 +5,8 @@ import { existsSync } from "node:fs";
 import { mkdtemp, readdir, readFile, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, extname, resolve } from "node:path";
-import { test } from "node:test";
 import { promisify } from "node:util";
+import { test } from "bun:test";
 
 const execFileAsync = promisify(execFile);
 const root = resolve(import.meta.dirname, "..");
@@ -67,11 +67,12 @@ function distImport(relativePath) {
 test("package metadata exposes the contract artifact build script", async () => {
 	const packageJson = await readJson("package.json");
 
+	assert.equal(packageJson.packageManager, "bun@1.3.2");
 	assert.equal(
 		packageJson.scripts?.["build:contract-artifact"],
-		"tsx scripts/build-contract-artifact.ts",
+		"bun scripts/build-contract-artifact.ts",
 	);
-	assert.equal(packageJson.devDependencies?.tsx.startsWith("^"), true);
+	assert.equal(packageJson.devDependencies?.tsx, undefined);
 });
 
 test("runtime contract artifact is present, deterministic, and source-fresh", async () => {
@@ -125,7 +126,7 @@ test("compiled contract artifact entrypoint exposes typed publish inputs", async
 
 test("contract artifact check succeeds for a clean generated artifact", async () => {
 	const result = await execFileAsync(
-		"npm",
+		"bun",
 		["run", "build:contract-artifact", "--", "--check"],
 		{
 			cwd: root,
@@ -137,19 +138,18 @@ test("contract artifact check succeeds for a clean generated artifact", async ()
 });
 
 test("contract artifact check validates source freshness when sui is unavailable", async () => {
-	const npmCli = process.env.npm_execpath;
-
-	assert.equal(typeof npmCli, "string");
+	assert.equal(typeof process.versions.bun, "string");
 
 	const tempBin = await mkdtemp(resolve(tmpdir(), "baby-claw-no-sui-"));
 
 	try {
+		await symlink(process.execPath, resolve(tempBin, "bun"));
 		await symlink(process.execPath, resolve(tempBin, "node"));
 		await symlink("/bin/sh", resolve(tempBin, "sh"));
 
 		const result = await execFileAsync(
 			process.execPath,
-			[npmCli, "run", "build:contract-artifact", "--", "--check"],
+			["run", "build:contract-artifact", "--", "--check"],
 			{
 				cwd: root,
 				env: {

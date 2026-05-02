@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { test } from "node:test";
+import { test } from "bun:test";
 
 const root = resolve(import.meta.dirname, "..");
 
@@ -52,8 +52,9 @@ test("package metadata exposes OpenClaw dev and runtime entries", async () => {
 	const packageJson = await readJson("package.json");
 
 	assert.equal(packageJson.type, "module");
+	assert.equal(packageJson.packageManager, "bun@1.3.2");
 	assert.equal(packageJson.scripts?.build, "tsc -p tsconfig.json");
-	assert.equal(packageJson.scripts?.test, "node --test tests/*.test.mjs");
+	assert.equal(packageJson.scripts?.test, "bun test tests/*.test.mjs");
 	assert.deepEqual(packageJson.openclaw?.extensions, ["./src/index.ts"]);
 	assert.deepEqual(packageJson.openclaw?.runtimeExtensions, [
 		"./dist/index.js",
@@ -66,7 +67,7 @@ test("compiled plugin entry registers the baby_claw_healthcheck tool", async () 
 	assert.equal(
 		existsSync(entryPath),
 		true,
-		"expected npm run build to create dist/index.js",
+		"expected bun run build to create dist/index.js",
 	);
 
 	const { default: entry } = await distImport("dist/index.js");
