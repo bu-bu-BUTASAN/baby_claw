@@ -1,3 +1,4 @@
+import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -5,7 +6,6 @@ import { existsSync } from "node:fs";
 import { mkdtemp, readdir, readFile, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, extname, resolve } from "node:path";
-import { test } from "node:test";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
@@ -67,11 +67,12 @@ function distImport(relativePath) {
 test("package metadata exposes the contract artifact build script", async () => {
 	const packageJson = await readJson("package.json");
 
+	assert.equal(packageJson.packageManager, "bun@1.3.2");
 	assert.equal(
 		packageJson.scripts?.["build:contract-artifact"],
-		"tsx scripts/build-contract-artifact.ts",
+		"bun scripts/build-contract-artifact.ts",
 	);
-	assert.equal(packageJson.devDependencies?.tsx.startsWith("^"), true);
+	assert.equal(packageJson.devDependencies?.tsx, undefined);
 });
 
 test("runtime contract artifact is present, deterministic, and source-fresh", async () => {
@@ -125,8 +126,8 @@ test("compiled contract artifact entrypoint exposes typed publish inputs", async
 
 test("contract artifact check succeeds for a clean generated artifact", async () => {
 	const result = await execFileAsync(
-		"npm",
-		["run", "build:contract-artifact", "--", "--check"],
+		"bun",
+		["run", "--silent", "build:contract-artifact", "--", "--check"],
 		{
 			cwd: root,
 			env: process.env,
@@ -137,19 +138,18 @@ test("contract artifact check succeeds for a clean generated artifact", async ()
 });
 
 test("contract artifact check validates source freshness when sui is unavailable", async () => {
-	const npmCli = process.env.npm_execpath;
-
-	assert.equal(typeof npmCli, "string");
+	assert.equal(typeof process.versions.bun, "string");
 
 	const tempBin = await mkdtemp(resolve(tmpdir(), "baby-claw-no-sui-"));
 
 	try {
+		await symlink(process.execPath, resolve(tempBin, "bun"));
 		await symlink(process.execPath, resolve(tempBin, "node"));
 		await symlink("/bin/sh", resolve(tempBin, "sh"));
 
 		const result = await execFileAsync(
 			process.execPath,
-			[npmCli, "run", "build:contract-artifact", "--", "--check"],
+			["run", "--silent", "build:contract-artifact", "--", "--check"],
 			{
 				cwd: root,
 				env: {

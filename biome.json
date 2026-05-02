@@ -6,7 +6,7 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": ["**", "!!**/dist", "!!package-lock.json"]
+		"includes": ["**", "!!**/dist", "!!bun.lock"]
 	},
 	"formatter": {
 		"enabled": true,

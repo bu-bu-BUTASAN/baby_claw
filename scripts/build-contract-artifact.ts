@@ -218,7 +218,7 @@ async function main() {
 	const checkOnly = args.includes("--check");
 
 	if (args.some((arg) => arg !== "--check")) {
-		throw new Error("usage: npm run build:contract-artifact -- [--check]");
+		throw new Error("usage: bun run build:contract-artifact -- [--check]");
 	}
 
 	let expected: string;
@@ -243,7 +243,7 @@ async function main() {
 				`${relative(
 					root,
 					artifactPath,
-				)} is stale; run npm run build:contract-artifact`,
+				)} is stale; run bun run build:contract-artifact`,
 			);
 		}
 
