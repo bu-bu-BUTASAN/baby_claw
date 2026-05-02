@@ -9,6 +9,10 @@ const root = resolve(import.meta.dirname, "..");
 const suiPrivateKeyRef = "$" + "{SUI_PRIVATE_KEY}";
 const walrusPublisherUrlRef = "$" + "{WALRUS_PUBLISHER_URL}";
 const walrusAggregatorUrlRef = "$" + "{WALRUS_AGGREGATOR_URL}";
+const defaultWalrusPublisherUrl =
+	"https://publisher.walrus-testnet.walrus.space";
+const defaultWalrusAggregatorUrl =
+	"https://aggregator.walrus-testnet.walrus.space";
 
 async function readJson(relativePath) {
 	const file = resolve(root, relativePath);
@@ -161,8 +165,8 @@ test("compiled plugin entry tolerates unresolved environment references", async 
 		assert.equal(registeredTools.length, 9);
 		assert.equal(status.config.readyForInit, false);
 		assert.equal(status.config.hasSuiPrivateKey, false);
-		assert.equal(status.config.hasWalrusPublisherUrl, false);
-		assert.equal(status.config.hasWalrusAggregatorUrl, false);
+		assert.equal(status.config.hasWalrusPublisherUrl, true);
+		assert.equal(status.config.hasWalrusAggregatorUrl, true);
 	} finally {
 		for (const [key, value] of Object.entries(previousEnv)) {
 			if (value === undefined) {
@@ -183,6 +187,8 @@ test("config schema normalizes defaults and rejects unsafe config shapes", async
 		stateDir: "~/.openclaw/baby_claw",
 		encryptImages: true,
 		walrusEpochs: 1,
+		walrusPublisherUrl: defaultWalrusPublisherUrl,
+		walrusAggregatorUrl: defaultWalrusAggregatorUrl,
 	});
 
 	assert.equal(configSchema.validate({ packageId: "0x123" }).ok, false);
@@ -257,6 +263,8 @@ test("config schema normalizes defaults and rejects unsafe config shapes", async
 				encryptImages: true,
 				walrusEpochs: 1,
 				suiPrivateKey: undefined,
+				walrusPublisherUrl: defaultWalrusPublisherUrl,
+				walrusAggregatorUrl: defaultWalrusAggregatorUrl,
 			},
 		);
 	} finally {

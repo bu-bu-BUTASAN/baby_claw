@@ -112,7 +112,7 @@ sequenceDiagram
 | Sui Client | 実装済み | publish、mint、add/list/get record の client layer |
 | Walrus / Crypto Client | 実装済み | 暗号化 JSON / 画像 blob の保存・復号・tamper拒否 |
 | Natural Language Tools | 実装済み | `record_milk`、`sleep_start/end`、`record_poop`、`get_today`、`get_last` |
-| Telegram Demo | 要環境設定 | Sui private key と Walrus endpoint を gateway 環境変数に設定後に確認 |
+| Telegram Demo | 要環境設定 | Sui private key を gateway 環境変数に設定後に確認。Walrus endpoint は公式Testnet endpointをdefault使用 |
 
 ## なぜ「利用者ごとに publish」するのか
 
@@ -206,8 +206,6 @@ cd contracts && sui move test
         "config": {
           "suiNetwork": "testnet",
           "suiPrivateKey": "${SUI_PRIVATE_KEY}",
-          "walrusPublisherUrl": "${WALRUS_PUBLISHER_URL}",
-          "walrusAggregatorUrl": "${WALRUS_AGGREGATOR_URL}",
           "stateDir": "~/.openclaw/baby_claw",
           "encryptImages": true,
           "walrusEpochs": 1
@@ -218,13 +216,20 @@ cd contracts && sui move test
 }
 ```
 
-`suiPrivateKey`、`walrusPublisherUrl`、`walrusAggregatorUrl` は `${ENV_NAME}` 形式で環境変数参照にできます。OpenClaw gateway を systemd で動かす場合は、gateway service に以下の環境変数を渡してください。
+`suiPrivateKey` は `${ENV_NAME}` 形式で環境変数参照にできます。OpenClaw gateway を systemd で動かす場合は、gateway service に以下の環境変数を渡してください。
 
 ```text
 SUI_PRIVATE_KEY=suiprivkey...
-WALRUS_PUBLISHER_URL=https://...
-WALRUS_AGGREGATOR_URL=https://...
 ```
+
+Walrus endpoint は未指定なら、Walrus公式docsがHTTP API例として示しているTestnet endpointを使います。
+
+```text
+walrusPublisherUrl=https://publisher.walrus-testnet.walrus.space
+walrusAggregatorUrl=https://aggregator.walrus-testnet.walrus.space
+```
+
+必要な場合だけ、`walrusPublisherUrl` と `walrusAggregatorUrl` を明示指定するか `${WALRUS_PUBLISHER_URL}` / `${WALRUS_AGGREGATOR_URL}` 形式で上書きできます。
 
 このPCでのローカル path install 例:
 
@@ -233,8 +238,6 @@ openclaw plugins install -l .
 openclaw plugins enable baby_claw
 openclaw config set plugins.entries.baby_claw.config.suiNetwork '"testnet"' --strict-json
 openclaw config set plugins.entries.baby_claw.config.suiPrivateKey '"${SUI_PRIVATE_KEY}"' --strict-json
-openclaw config set plugins.entries.baby_claw.config.walrusPublisherUrl '"${WALRUS_PUBLISHER_URL}"' --strict-json
-openclaw config set plugins.entries.baby_claw.config.walrusAggregatorUrl '"${WALRUS_AGGREGATOR_URL}"' --strict-json
 openclaw config set plugins.entries.baby_claw.config.stateDir '"~/.openclaw/baby_claw"' --strict-json
 openclaw config set plugins.entries.baby_claw.config.encryptImages true --strict-json
 openclaw config set plugins.entries.baby_claw.config.walrusEpochs 1 --strict-json
@@ -247,8 +250,6 @@ OpenClawが plugin config だけを受け取る環境では、次の形でも同
 {
       "suiNetwork": "testnet",
       "suiPrivateKey": "${SUI_PRIVATE_KEY}",
-      "walrusPublisherUrl": "${WALRUS_PUBLISHER_URL}",
-      "walrusAggregatorUrl": "${WALRUS_AGGREGATOR_URL}",
       "stateDir": "~/.openclaw/baby_claw",
       "encryptImages": true,
       "walrusEpochs": 1

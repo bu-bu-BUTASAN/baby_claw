@@ -5,6 +5,10 @@ const defaultSuiNetwork = "testnet";
 const defaultStateDir = "~/.openclaw/baby_claw";
 const defaultEncryptImages = true;
 const defaultWalrusEpochs = 1;
+const defaultWalrusPublisherUrl =
+	"https://publisher.walrus-testnet.walrus.space";
+const defaultWalrusAggregatorUrl =
+	"https://aggregator.walrus-testnet.walrus.space";
 const allowedSuiNetworks = new Set(["testnet", "devnet", "localnet"]);
 const envReferencePattern = /^\$\{([A-Z_][A-Z0-9_]*)\}$/;
 const envReferenceExample = "$" + "{ENV_NAME}";
@@ -107,11 +111,12 @@ function resolveOptionalEnvReference(
 	value: unknown,
 	key: keyof BabyClawConfig,
 	allowMissing: boolean,
+	fallback?: string,
 ): string | undefined {
 	if (value === undefined) {
-		return undefined;
+		return fallback;
 	}
-	return resolveEnvReference(value as string, key, allowMissing);
+	return resolveEnvReference(value as string, key, allowMissing) ?? fallback;
 }
 
 type ValidateOptions = {
@@ -217,10 +222,11 @@ export function validateBabyClawConfig(
 									value.walrusPublisherUrl,
 									"walrusPublisherUrl",
 									Boolean(options.allowMissingEnv),
+									defaultWalrusPublisherUrl,
 								)
 							: (value.walrusPublisherUrl as string),
 					}
-				: {}),
+				: { walrusPublisherUrl: defaultWalrusPublisherUrl }),
 			...(value.walrusAggregatorUrl !== undefined
 				? {
 						walrusAggregatorUrl: options.resolveEnv
@@ -228,10 +234,11 @@ export function validateBabyClawConfig(
 									value.walrusAggregatorUrl,
 									"walrusAggregatorUrl",
 									Boolean(options.allowMissingEnv),
+									defaultWalrusAggregatorUrl,
 								)
 							: (value.walrusAggregatorUrl as string),
 					}
-				: {}),
+				: { walrusAggregatorUrl: defaultWalrusAggregatorUrl }),
 		},
 	};
 }
