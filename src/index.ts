@@ -2,6 +2,7 @@ import { Type } from "@sinclair/typebox";
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { configSchema, normalizeBabyClawConfig } from "./config.js";
 import { createStatusTool } from "./tools/status.js";
+import { createBabyClawTools } from "./tools/step9.js";
 
 const pluginId = "baby_claw";
 const version = "0.1.0";
@@ -36,6 +37,9 @@ export default definePluginEntry({
 				};
 			},
 		});
+		for (const tool of createBabyClawTools(config)) {
+			api.registerTool(tool);
+		}
 		api.registerTool(createStatusTool(config));
 	},
 });

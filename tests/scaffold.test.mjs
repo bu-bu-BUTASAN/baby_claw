@@ -39,13 +39,20 @@ test("openclaw manifest declares baby_claw with the strict config schema", async
 	assert.equal(manifest.uiHints?.suiPrivateKey?.sensitive, true);
 });
 
-test("openclaw manifest declares the healthcheck and status tool contracts", async () => {
+test("openclaw manifest declares the Step 9 tool contracts", async () => {
 	const manifest = await readJson("openclaw.plugin.json");
 
 	assert.deepEqual(manifest.skills, ["skills/baby_claw"]);
 	assert.deepEqual(manifest.contracts?.tools, [
 		"baby_claw_healthcheck",
+		"baby_claw_init",
 		"baby_claw_status",
+		"baby_claw_record_milk",
+		"baby_claw_sleep_start",
+		"baby_claw_sleep_end",
+		"baby_claw_record_poop",
+		"baby_claw_get_today",
+		"baby_claw_get_last",
 	]);
 });
 
@@ -62,7 +69,7 @@ test("package metadata exposes OpenClaw dev and runtime entries", async () => {
 	]);
 });
 
-test("compiled plugin entry registers the baby_claw_healthcheck tool", async () => {
+test("compiled plugin entry registers the Step 9 tools", async () => {
 	const entryPath = resolve(root, "dist/index.js");
 
 	assert.equal(
@@ -85,7 +92,17 @@ test("compiled plugin entry registers the baby_claw_healthcheck tool", async () 
 
 	entry.register(api);
 
-	assert.equal(registeredTools.length, 2);
+	assert.deepEqual(registeredTools.map(({ tool }) => tool.name).sort(), [
+		"baby_claw_get_last",
+		"baby_claw_get_today",
+		"baby_claw_healthcheck",
+		"baby_claw_init",
+		"baby_claw_record_milk",
+		"baby_claw_record_poop",
+		"baby_claw_sleep_end",
+		"baby_claw_sleep_start",
+		"baby_claw_status",
+	]);
 
 	const { tool, options } = registeredTools.find(
 		({ tool: registeredTool }) =>
