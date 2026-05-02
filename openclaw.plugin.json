@@ -15,8 +15,18 @@
 				]
 			},
 			"suiPrivateKey": { "type": "string" },
-			"walrusPublisherUrl": { "format": "uri", "type": "string" },
-			"walrusAggregatorUrl": { "format": "uri", "type": "string" },
+			"walrusPublisherUrl": {
+				"anyOf": [
+					{ "format": "uri", "type": "string" },
+					{ "pattern": "^\\$\\{[A-Z_][A-Z0-9_]*\\}$", "type": "string" }
+				]
+			},
+			"walrusAggregatorUrl": {
+				"anyOf": [
+					{ "format": "uri", "type": "string" },
+					{ "pattern": "^\\$\\{[A-Z_][A-Z0-9_]*\\}$", "type": "string" }
+				]
+			},
 			"stateDir": { "type": "string" },
 			"encryptImages": { "type": "boolean" },
 			"walrusEpochs": { "minimum": 1, "type": "integer" }
