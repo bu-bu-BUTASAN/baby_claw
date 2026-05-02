@@ -1,0 +1,6 @@
+[package]
+name = "baby_claw"
+edition = "2024"
+
+[addresses]
+baby_claw = "0x0"
