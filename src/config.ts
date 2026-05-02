@@ -4,6 +4,7 @@ import type { OpenClawPluginConfigSchema } from "openclaw/plugin-sdk/plugin-entr
 const defaultSuiNetwork = "testnet";
 const defaultStateDir = "~/.openclaw/baby_claw";
 const defaultEncryptImages = true;
+const defaultWalrusEpochs = 1;
 const allowedSuiNetworks = new Set(["testnet", "devnet", "localnet"]);
 
 export type BabyClawConfig = {
@@ -13,6 +14,7 @@ export type BabyClawConfig = {
 	walrusAggregatorUrl?: string;
 	stateDir: string;
 	encryptImages: boolean;
+	walrusEpochs: number;
 };
 
 export const configJsonSchema = Type.Object(
@@ -29,6 +31,7 @@ export const configJsonSchema = Type.Object(
 		walrusAggregatorUrl: Type.Optional(Type.String({ format: "uri" })),
 		stateDir: Type.Optional(Type.String()),
 		encryptImages: Type.Optional(Type.Boolean()),
+		walrusEpochs: Type.Optional(Type.Integer({ minimum: 1 })),
 	},
 	{ additionalProperties: false },
 );
@@ -106,6 +109,15 @@ export function validateBabyClawConfig(value: unknown): ValidationResult {
 		errors.push("encryptImages must be a boolean");
 	}
 
+	if (
+		value.walrusEpochs !== undefined &&
+		(typeof value.walrusEpochs !== "number" ||
+			!Number.isInteger(value.walrusEpochs) ||
+			value.walrusEpochs < 1)
+	) {
+		errors.push("walrusEpochs must be a positive integer");
+	}
+
 	for (const key of ["walrusPublisherUrl", "walrusAggregatorUrl"] as const) {
 		const url = value[key];
 		if (url !== undefined) {
@@ -128,6 +140,7 @@ export function validateBabyClawConfig(value: unknown): ValidationResult {
 				defaultSuiNetwork) as BabyClawConfig["suiNetwork"],
 			stateDir: (value.stateDir ?? defaultStateDir) as string,
 			encryptImages: (value.encryptImages ?? defaultEncryptImages) as boolean,
+			walrusEpochs: (value.walrusEpochs ?? defaultWalrusEpochs) as number,
 			...(value.suiPrivateKey !== undefined
 				? { suiPrivateKey: value.suiPrivateKey as string }
 				: {}),
