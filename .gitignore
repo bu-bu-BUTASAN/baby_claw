@@ -5,3 +5,5 @@ coverage/
 *.log
 .agents/
 contracts/build
+contracts/.coverage_map.mvcov
+contracts/traces/
