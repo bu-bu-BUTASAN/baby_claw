@@ -45,7 +45,7 @@ flowchart LR
   class sui,state chain;
 ```
 
-## 審査員向けハイライト
+## ハイライト
 
 | 観点 | Baby Claw の見せどころ |
 | --- | --- |
@@ -300,24 +300,3 @@ docs_implement/  MVP implementation plan
 - Walrus payloads and images must be encrypted before upload.
 - The MVP intentionally avoids on-chain function names such as `add_milk` or `add_poop`; records are stored through a generic `add_record` flow.
 
-## Roadmap
-
-```mermaid
-gantt
-  title Baby Claw MVP Roadmap
-  dateFormat  YYYY-MM-DD
-  axisFormat  %m/%d
-  section Done
-  Plugin scaffold and status        :done, a1, 2026-05-02, 1d
-  Privacy-first Move ledger         :done, a2, 2026-05-02, 1d
-  Runtime artifact and clients      :done, a3, 2026-05-02, 1d
-  Encrypted Walrus storage          :done, a4, 2026-05-02, 1d
-  section Next
-  Init and record tools             :active, b1, 2026-05-03, 1d
-  Telegram natural language demo    :b2, after b1, 1d
-  End-to-end privacy isolation test :b3, after b2, 1d
-```
-
-## License
-
-Hackathon MVP. License file is not included yet.
