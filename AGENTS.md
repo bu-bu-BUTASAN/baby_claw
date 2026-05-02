@@ -10,10 +10,10 @@ The planned layout is an OpenClaw plugin: `src/` for TypeScript runtime code, `s
 
 Use these commands as the planned files land:
 
-- `npm install` installs Node dependencies.
-- `npm run build` compiles the TypeScript plugin.
-- `npm run test` runs TypeScript tests.
-- `npm run build:contract-artifact` generates the runtime Move artifact.
+- `bun install` installs dependencies.
+- `bun run build` compiles the TypeScript plugin.
+- `bun run test` runs TypeScript tests.
+- `bun run build:contract-artifact` generates the runtime Move artifact.
 - `cd contracts && sui move build` builds the Move contract.
 - `cd contracts && sui move test` runs Move tests.
 - `cd contracts && sui move test --coverage` checks contract coverage.

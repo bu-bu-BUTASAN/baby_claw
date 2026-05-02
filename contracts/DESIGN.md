@@ -215,8 +215,8 @@ Required behavior:
 この design document だけを追加した後に実行する確認:
 
 ```bash
-npm run build
-npm run test
+bun run build
+bun run test
 openclaw gateway restart
 openclaw plugins inspect baby_claw --json
 ```

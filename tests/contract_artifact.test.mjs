@@ -1,3 +1,4 @@
+import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -6,7 +7,6 @@ import { mkdtemp, readdir, readFile, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, extname, resolve } from "node:path";
 import { promisify } from "node:util";
-import { test } from "bun:test";
 
 const execFileAsync = promisify(execFile);
 const root = resolve(import.meta.dirname, "..");
@@ -127,7 +127,7 @@ test("compiled contract artifact entrypoint exposes typed publish inputs", async
 test("contract artifact check succeeds for a clean generated artifact", async () => {
 	const result = await execFileAsync(
 		"bun",
-		["run", "build:contract-artifact", "--", "--check"],
+		["run", "--silent", "build:contract-artifact", "--", "--check"],
 		{
 			cwd: root,
 			env: process.env,
@@ -149,7 +149,7 @@ test("contract artifact check validates source freshness when sui is unavailable
 
 		const result = await execFileAsync(
 			process.execPath,
-			["run", "build:contract-artifact", "--", "--check"],
+			["run", "--silent", "build:contract-artifact", "--", "--check"],
 			{
 				cwd: root,
 				env: {
