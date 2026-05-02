@@ -61,6 +61,14 @@ fun two_records_use_separate_dynamic_fields() {
         assert_eq!(ledger::profile_next_seq(&profile), 2);
         assert!(ledger::record_exists(&profile, 0));
         assert!(ledger::record_exists(&profile, 1));
+        assert_eq!(ledger::record_seq(&profile, 0), 0);
+        assert_eq!(ledger::record_seq(&profile, 1), 1);
+        assert!(ledger::record_payload_blob_id(&profile, 0) == vector[1, 2, 10]);
+        assert!(ledger::record_payload_blob_id(&profile, 1) == vector[1, 2, 11]);
+        assert!(ledger::record_payload_hash(&profile, 0) == vector[4, 5, 10]);
+        assert!(ledger::record_payload_hash(&profile, 1) == vector[4, 5, 11]);
+        assert!(ledger::record_commitment(&profile, 0) == vector[7, 8, 10]);
+        assert!(ledger::record_commitment(&profile, 1) == vector[7, 8, 11]);
         scenario.return_to_sender(profile);
     };
 
