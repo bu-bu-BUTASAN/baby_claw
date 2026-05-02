@@ -11,6 +11,7 @@
 	],
 	"scripts": {
 		"build": "tsc -p tsconfig.json",
+		"build:contract-artifact": "tsx scripts/build-contract-artifact.ts",
 		"check": "biome check --write . && tsc -p tsconfig.json --noEmit",
 		"test": "node --test tests/*.test.mjs"
 	},
@@ -20,6 +21,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.14",
+		"tsx": "^4.21.0",
 		"typescript": "^5.9.3"
 	},
 	"openclaw": {
