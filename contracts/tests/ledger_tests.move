@@ -9,7 +9,7 @@ use sui::test_scenario;
 const OWNER: address = @0xA11CE;
 const OTHER: address = @0xB0B;
 const CREATED_AT_MS: u64 = 123456789;
-const CREATED_AT_BUCKET: u64 = 987654;
+const RECORD_CREATED_AT_MS: u64 = 987654321;
 
 #[test]
 fun mint_profile_creates_owner_profile() {
@@ -92,7 +92,7 @@ fun empty_payload_blob_id_aborts() {
             vector[],
             vector[4, 5, 6],
             vector[7, 8, 9],
-            CREATED_AT_BUCKET,
+            RECORD_CREATED_AT_MS,
             scenario.ctx(),
         );
         scenario.return_to_sender(profile);
@@ -112,7 +112,7 @@ fun empty_payload_hash_aborts() {
             vector[1, 2, 3],
             vector[],
             vector[7, 8, 9],
-            CREATED_AT_BUCKET,
+            RECORD_CREATED_AT_MS,
             scenario.ctx(),
         );
         scenario.return_to_sender(profile);
@@ -132,7 +132,7 @@ fun empty_record_commitment_aborts() {
             vector[1, 2, 3],
             vector[4, 5, 6],
             vector[],
-            CREATED_AT_BUCKET,
+            RECORD_CREATED_AT_MS,
             scenario.ctx(),
         );
         scenario.return_to_sender(profile);
@@ -153,7 +153,7 @@ fun record_getters_return_stored_metadata() {
         assert!(ledger::record_payload_blob_id(&profile, 0) == vector[1, 2, 42]);
         assert!(ledger::record_payload_hash(&profile, 0) == vector[4, 5, 42]);
         assert!(ledger::record_commitment(&profile, 0) == vector[7, 8, 42]);
-        assert_eq!(ledger::record_created_at_bucket(&profile, 0), CREATED_AT_BUCKET);
+        assert_eq!(ledger::record_created_at_ms(&profile, 0), RECORD_CREATED_AT_MS);
         assert_eq!(ledger::record_schema_version(&profile, 0), 1);
         scenario.return_to_sender(profile);
     };
@@ -177,7 +177,7 @@ fun add_sample_record(profile: &mut Profile, ctx: &mut TxContext, marker: u8) {
         vector[1, 2, marker],
         vector[4, 5, marker],
         vector[7, 8, marker],
-        CREATED_AT_BUCKET,
+        RECORD_CREATED_AT_MS,
         ctx,
     );
 }

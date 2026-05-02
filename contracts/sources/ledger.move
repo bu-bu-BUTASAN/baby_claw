@@ -27,7 +27,7 @@ public struct Record has store {
     payload_blob_id: vector<u8>,
     payload_hash: vector<u8>,
     record_commitment: vector<u8>,
-    created_at_bucket: u64,
+    created_at_ms: u64,
     schema_version: u16,
 }
 
@@ -48,7 +48,7 @@ public fun add_record(
     payload_blob_id: vector<u8>,
     payload_hash: vector<u8>,
     record_commitment: vector<u8>,
-    created_at_bucket: u64,
+    created_at_ms: u64,
     ctx: &mut TxContext,
 ) {
     assert!(profile.owner == tx_context::sender(ctx), E_NOT_OWNER);
@@ -62,7 +62,7 @@ public fun add_record(
         payload_blob_id,
         payload_hash,
         record_commitment,
-        created_at_bucket,
+        created_at_ms,
         schema_version: SCHEMA_VERSION,
     };
 
@@ -116,8 +116,8 @@ public fun record_commitment(profile: &Profile, seq: u64): vector<u8> {
 }
 
 #[test_only]
-public fun record_created_at_bucket(profile: &Profile, seq: u64): u64 {
-    borrow_record(profile, seq).created_at_bucket
+public fun record_created_at_ms(profile: &Profile, seq: u64): u64 {
+    borrow_record(profile, seq).created_at_ms
 }
 
 #[test_only]
