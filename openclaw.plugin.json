@@ -6,10 +6,29 @@
 	"configSchema": {
 		"type": "object",
 		"additionalProperties": false,
-		"properties": {}
+		"properties": {
+			"suiNetwork": {
+				"anyOf": [
+					{ "const": "testnet", "type": "string" },
+					{ "const": "devnet", "type": "string" },
+					{ "const": "localnet", "type": "string" }
+				]
+			},
+			"suiPrivateKey": { "type": "string" },
+			"walrusPublisherUrl": { "format": "uri", "type": "string" },
+			"walrusAggregatorUrl": { "format": "uri", "type": "string" },
+			"stateDir": { "type": "string" },
+			"encryptImages": { "type": "boolean" }
+		}
+	},
+	"uiHints": {
+		"suiPrivateKey": {
+			"label": "Sui private key",
+			"sensitive": true
+		}
 	},
 	"skills": ["skills/baby_claw"],
 	"contracts": {
-		"tools": ["baby_claw_healthcheck"]
+		"tools": ["baby_claw_healthcheck", "baby_claw_status"]
 	}
 }
