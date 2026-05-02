@@ -4,4 +4,3 @@ dist/
 coverage/
 *.log
 .agents/
-contracts/build
