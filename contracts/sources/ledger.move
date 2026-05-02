@@ -31,8 +31,7 @@ public struct Record has store {
     schema_version: u16,
 }
 
-#[allow(lint(public_entry))]
-public entry fun mint_profile(clock: &Clock, ctx: &mut TxContext) {
+public fun mint_profile(clock: &Clock, ctx: &mut TxContext) {
     let sender = tx_context::sender(ctx);
     let profile = Profile {
         id: object::new(ctx),
@@ -44,8 +43,7 @@ public entry fun mint_profile(clock: &Clock, ctx: &mut TxContext) {
     transfer::transfer(profile, sender);
 }
 
-#[allow(lint(public_entry))]
-public entry fun add_record(
+public fun add_record(
     profile: &mut Profile,
     payload_blob_id: vector<u8>,
     payload_hash: vector<u8>,
