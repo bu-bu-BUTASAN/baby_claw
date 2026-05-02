@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { readdir, readFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, symlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { basename, extname, resolve } from "node:path";
 import { test } from "node:test";
 import { promisify } from "node:util";
@@ -133,4 +134,33 @@ test("contract artifact check succeeds for a clean generated artifact", async ()
 	);
 
 	assert.equal(result.stderr, "");
+});
+
+test("contract artifact check validates source freshness when sui is unavailable", async () => {
+	const npmCli = process.env.npm_execpath;
+
+	assert.equal(typeof npmCli, "string");
+
+	const tempBin = await mkdtemp(resolve(tmpdir(), "baby-claw-no-sui-"));
+
+	try {
+		await symlink(process.execPath, resolve(tempBin, "node"));
+		await symlink("/bin/sh", resolve(tempBin, "sh"));
+
+		const result = await execFileAsync(
+			process.execPath,
+			[npmCli, "run", "build:contract-artifact", "--", "--check"],
+			{
+				cwd: root,
+				env: {
+					...process.env,
+					PATH: tempBin,
+				},
+			},
+		);
+
+		assert.equal(result.stderr, "");
+	} finally {
+		await rm(tempBin, { recursive: true, force: true });
+	}
 });

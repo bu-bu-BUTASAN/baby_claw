@@ -92,7 +92,46 @@ function validateStringArray(
 	return value;
 }
 
-async function buildArtifact(): Promise<BabyClawContractArtifact> {
+function validateArtifact(value: unknown): BabyClawContractArtifact {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) {
+		throw new Error("contract artifact must be a JSON object");
+	}
+
+	const artifact = value as Partial<BabyClawContractArtifact>;
+
+	return {
+		modules: validateStringArray(artifact.modules, "modules", base64Pattern),
+		dependencies: validateStringArray(
+			artifact.dependencies,
+			"dependencies",
+			addressPattern,
+		),
+		sourceHash: validateArtifactString(
+			artifact.sourceHash,
+			"sourceHash",
+			/^sha256:[0-9a-f]{64}$/,
+		),
+		contractVersion: validateArtifactString(
+			artifact.contractVersion,
+			"contractVersion",
+			/^.+$/,
+		),
+	};
+}
+
+function validateArtifactString(
+	value: unknown,
+	name: "sourceHash" | "contractVersion",
+	pattern: RegExp,
+): string {
+	if (typeof value !== "string" || !pattern.test(value)) {
+		throw new Error(`contract artifact must include a valid ${name}`);
+	}
+
+	return value;
+}
+
+function readSuiBuildOutput(): SuiBuildOutput {
 	const stdout = execFileSync(
 		"sui",
 		["move", "build", "--dump-bytecode-as-base64"],
@@ -102,7 +141,11 @@ async function buildArtifact(): Promise<BabyClawContractArtifact> {
 			stdio: ["ignore", "pipe", "pipe"],
 		},
 	);
-	const buildOutput = extractBuildJson(stdout);
+
+	return extractBuildJson(stdout);
+}
+
+async function readPackageVersion(): Promise<string> {
 	const packageJson = JSON.parse(
 		await readFile(resolve(root, "package.json"), "utf8"),
 	) as { version?: unknown };
@@ -114,6 +157,12 @@ async function buildArtifact(): Promise<BabyClawContractArtifact> {
 		throw new Error("root package.json must include a non-empty version");
 	}
 
+	return packageJson.version;
+}
+
+async function buildArtifact(): Promise<BabyClawContractArtifact> {
+	const buildOutput = readSuiBuildOutput();
+
 	return {
 		modules: validateStringArray(buildOutput.modules, "modules", base64Pattern),
 		dependencies: validateStringArray(
@@ -122,7 +171,7 @@ async function buildArtifact(): Promise<BabyClawContractArtifact> {
 			addressPattern,
 		),
 		sourceHash: await computeSourceHash(),
-		contractVersion: packageJson.version,
+		contractVersion: await readPackageVersion(),
 	};
 }
 
@@ -139,6 +188,31 @@ function formatArtifact(artifact: BabyClawContractArtifact): string {
 	)}\n`;
 }
 
+function isMissingSuiCli(error: unknown): boolean {
+	return (
+		typeof error === "object" &&
+		error !== null &&
+		"code" in error &&
+		error.code === "ENOENT" &&
+		"syscall" in error &&
+		typeof error.syscall === "string" &&
+		error.syscall.includes("spawnSync sui")
+	);
+}
+
+async function checkExistingArtifactWithoutSui(): Promise<string> {
+	const artifact = validateArtifact(
+		JSON.parse(await readFile(artifactPath, "utf8")),
+	);
+	const expected = formatArtifact({
+		...artifact,
+		sourceHash: await computeSourceHash(),
+		contractVersion: await readPackageVersion(),
+	});
+
+	return expected;
+}
+
 async function main() {
 	const args = process.argv.slice(2);
 	const checkOnly = args.includes("--check");
@@ -147,7 +221,16 @@ async function main() {
 		throw new Error("usage: npm run build:contract-artifact -- [--check]");
 	}
 
-	const expected = formatArtifact(await buildArtifact());
+	let expected: string;
+	try {
+		expected = formatArtifact(await buildArtifact());
+	} catch (error) {
+		if (!checkOnly || !isMissingSuiCli(error)) {
+			throw error;
+		}
+
+		expected = await checkExistingArtifactWithoutSui();
+	}
 
 	if (checkOnly) {
 		if (!existsSync(artifactPath)) {
